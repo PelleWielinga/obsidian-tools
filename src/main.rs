@@ -16,12 +16,14 @@ fn list_markdown_files(dir: &Path) {
             for entry in entries {
                 match entry {
                     Ok(entry) => {
-                        let path = entry.path(); 
+                        let path = entry.path();
 
                         if !should_ignore(&path) {
                             if path.is_dir() {
                                 list_markdown_files(&path);
-                            } else if path.is_file() && path.extension().map(|s| s == "md").unwrap_or(false) {
+                            } else if path.is_file()
+                                && path.extension().map(|s| s == "md").unwrap_or(false)
+                            {
                                 println!("{}", path.display());
                             }
                         }
