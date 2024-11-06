@@ -1,5 +1,5 @@
 {
-  description = "A simple Go package";
+  description = "Tools for obsidian notes";
 
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-24.05";
