@@ -1,12 +1,69 @@
+use regex::Regex;
+use serde::Deserialize;
+use std::fmt::{self};
+use std::fs;
+use std::io::{self, Read};
 use std::path::{Path, PathBuf};
-use std::{fs, io};
 
 const MARKDOWN_DIR: &str = "/home/pelle/dev/notes/";
+
+#[derive(Debug)]
+struct MarkdownFile {
+    path: PathBuf,
+    frontmatter: Frontmatter,
+}
+
+#[derive(Debug, Deserialize, Default)]
+struct Frontmatter {
+    id: Option<String>,
+}
+
+impl fmt::Display for Frontmatter {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.id {
+            Some(id) => write!(f, "ID: {}", id),
+            None => write!(f, "ID: None"),
+        }
+    }
+}
+
+impl fmt::Display for MarkdownFile {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Path: {}\nFrontmatter: {}",
+            self.path.display(),
+            self.frontmatter
+        )
+    }
+}
 
 fn should_ignore(path: &PathBuf) -> bool {
     match path.file_name() {
         Some(name) => name == ".git" || name == ".direnv",
         None => false,
+    }
+}
+fn parse_markdown_file(path: &PathBuf) -> io::Result<MarkdownFile> {
+    let mut file = fs::File::open(path)?;
+    let mut content = String::new();
+    file.read_to_string(&mut content)?;
+
+    let frontmatter = extract_frontmatter(&content).unwrap_or_default();
+
+    Ok(MarkdownFile {
+        path: path.to_path_buf(),
+        frontmatter,
+    })
+}
+
+fn extract_frontmatter(content: &str) -> Option<Frontmatter> {
+    let re = Regex::new(r"(?s)^---\n(.*?)\n---").unwrap();
+    if let Some(captures) = re.captures(content) {
+        let frontmatter_str = captures.get(1).unwrap().as_str();
+        serde_yaml::from_str(frontmatter_str).ok()
+    } else {
+        None
     }
 }
 
@@ -26,7 +83,7 @@ fn list_markdown_files(dir: &Path) -> io::Result<Vec<PathBuf>> {
                             } else if path.is_file()
                                 && path.extension().map(|s| s == "md").unwrap_or(false)
                             {
-                                println!("{}", path.display());
+                                markdown_files.push(path);
                             }
                         }
                     }
@@ -45,7 +102,8 @@ fn main() {
     match list_markdown_files(markdown_path) {
         Ok(files) => {
             for path in files {
-                println!("{}", path.display())
+                let f = parse_markdown_file(&path).unwrap();
+                println!("{}", f)
             }
         }
         Err(e) => eprintln!("Error listing markdown files: {}", e),

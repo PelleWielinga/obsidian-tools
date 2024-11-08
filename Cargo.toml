@@ -5,3 +5,6 @@ edition = "2021"
 
 [dependencies]
 markdown = "=1.0.0-alpha.21"
+regex = "1.11.1"
+serde = { version = "1.0.214", features = ["derive"] }
+serde_yaml = "0.9.34"
